@@ -74,7 +74,6 @@ checkEnv() {
         echo -e "${RED}You need to be a member of the sudo group to run me!"
         exit 1
     fi
-
 }
 
 installDepend() {
@@ -134,34 +133,6 @@ installZoxide() {
     fi
 }
 
-install_additional_dependencies() {
-    case $(command -v apt || command -v zypper || command -v dnf || command -v pacman) in
-        *apt)
-            curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
-            chmod u+x nvim.appimage
-            ./nvim.appimage --appimage-extract
-            sudo mv squashfs-root /opt/neovim
-            sudo ln -s /opt/neovim/AppRun /usr/bin/nvim
-            ;;
-        *zypper)
-            sudo zypper refresh
-            sudo zypper install -y neovim 
-            ;;
-        *dnf)
-            sudo dnf check-update
-            sudo dnf install -y neovim 
-            ;;
-        *pacman)
-            sudo pacman -Syu
-            sudo pacman -S --noconfirm neovim 
-            ;;
-        *)
-            echo "No supported package manager found. Please install neovim manually."
-            exit 1
-            ;;
-    esac
-}
-
 linkConfig() {
     ## Get the correct user home directory.
     USER_HOME=$(getent passwd ${SUDO_USER:-$USER} | cut -d: -f6)
@@ -185,7 +156,6 @@ checkEnv
 installDepend
 installStarship
 installZoxide
-install_additional_dependencies
 
 if linkConfig; then
     echo -e "${GREEN}Done!\nrestart your shell to see the changes.${RC}"
