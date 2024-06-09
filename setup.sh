@@ -16,7 +16,7 @@ fi
 
 if [[ ! -d "$LINUXTOOLBOXDIR/mybash" ]]; then
     echo -e "${YELLOW}Cloning mybash repository into: $LINUXTOOLBOXDIR/mybash${RC}"
-    git clone https://github.com/ChrisTitusTech/mybash "$LINUXTOOLBOXDIR/mybash"
+    git clone https://github.com/swedishstyle/mybash "$LINUXTOOLBOXDIR/mybash"
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}Successfully cloned mybash repository${RC}"
     else

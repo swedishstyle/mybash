@@ -52,13 +52,13 @@ if [[ $iatest -gt 0 ]]; then bind "set completion-ignore-case on"; fi
 if [[ $iatest -gt 0 ]]; then bind "set show-all-if-ambiguous On"; fi
 
 # Set the default editor
-export EDITOR=nvim
-export VISUAL=nvim
-alias pico='edit'
-alias spico='sedit'
-alias nano='edit'
-alias snano='sedit'
-alias vim='nvim'
+#export EDITOR=nvim
+#export VISUAL=nvim
+#alias pico='edit'
+#alias spico='sedit'
+#alias nano='edit'
+#alias snano='sedit'
+#alias vim='nvim'
 
 # Replace batcat with cat on Fedora as batcat is not available as a RPM in any form
 if command -v lsb_release >/dev/null; then
@@ -152,20 +152,20 @@ alias bd='cd "$OLDPWD"'
 alias rmd='/bin/rm  --recursive --force --verbose '
 
 # Alias's for multiple directory listing commands
-alias la='ls -Alh'                # show hidden files
-alias ls='ls -aFh --color=always' # add colors and file type extensions
-alias lx='ls -lXBh'               # sort by extension
-alias lk='ls -lSrh'               # sort by size
-alias lc='ls -lcrh'               # sort by change time
-alias lu='ls -lurh'               # sort by access time
-alias lr='ls -lRh'                # recursive ls
-alias lt='ls -ltrh'               # sort by date
-alias lm='ls -alh |more'          # pipe through 'more'
-alias lw='ls -xAh'                # wide listing format
-alias ll='ls -Fls'                # long listing format
-alias labc='ls -lap'              #alphabetical sort
-alias lf="ls -l | egrep -v '^d'"  # files only
-alias ldir="ls -l | egrep '^d'"   # directories only
+alias la='ls -Alh'                 # show hidden files
+alias ls='ls -laFh --color=always' # add colors and file type extensions
+alias lx='ls -lXBh'                # sort by extension
+alias lk='ls -lSrh'                # sort by size
+alias lc='ls -lcrh'                # sort by change time
+alias lu='ls -lurh'                # sort by access time
+alias lr='ls -lRh'                 # recursive ls
+alias lt='ls -ltrh'                # sort by date
+alias lm='ls -alh |more'           # pipe through 'more'
+alias lw='ls -xAh'                 # wide listing format
+alias ll='ls -Fls'                 # long listing format
+alias labc='ls -lap'               #alphabetical sort
+alias lf="ls -l | egrep -v '^d'"   # files only
+alias ldir="ls -l | egrep '^d'"    # directories only
 
 # alias chmod commands
 alias mx='chmod a+x'
@@ -324,8 +324,7 @@ up() {
 }
 
 # Automatically do an ls after each cd, z, or zoxide
-cd ()
-{
+cd () {
 	if [ -n "$1" ]; then
 		builtin cd "$@" && ls
 	else
@@ -339,8 +338,7 @@ pwdtail() {
 }
 
 # Show the current distribution
-distribution ()
-{
+distribution() {
 	local dtype="unknown"  # Default to unknown
 
 	# Use /etc/os-release for modern distro identification
@@ -451,20 +449,21 @@ install_bashrc_support() {
 
 # IP address lookup
 alias whatismyip="whatsmyip"
-function whatsmyip ()
-{
+function whatsmyip () {
+	INTERFACE=$(ip -o -4 route show to default | awk '{print $5}')
 	# Internal IP Lookup.
 	if [ -e /sbin/ip ]; then
 		echo -n "Internal IP: "
-		/sbin/ip addr show wlan0 | grep "inet " | awk -F: '{print $1}' | awk '{print $2}'
+		/sbin/ip addr show $INTERFACE | grep "inet " | awk -F: '{print $1}' | awk '{print $2}'
 	else
 		echo -n "Internal IP: "
-		/sbin/ifconfig wlan0 | grep "inet " | awk -F: '{print $1} |' | awk '{print $2}'
+		/sbin/ifconfig $INTERFACE | grep "inet " | awk -F: '{print $1} |' | awk '{print $2}'
 	fi
 
 	# External IP Lookup
 	echo -n "External IP: "
 	curl -s ifconfig.me
+	echo ""
 }
 
 # View Apache logs
@@ -529,7 +528,6 @@ mysqlconfig() {
 	fi
 }
 
-
 # Trim leading and trailing spaces (for scripts)
 trim() {
 	local var=$*
@@ -549,30 +547,10 @@ lazyg() {
 	git push
 }
 
-function hb {
-    if [ $# -eq 0 ]; then
-        echo "No file path specified."
-        return
-    elif [ ! -f "$1" ]; then
-        echo "File path does not exist."
-        return
-    fi
-
-    uri="http://bin.christitus.com/documents"
-    response=$(curl -s -X POST -d "$(cat "$1")" "$uri")
-    if [ $? -eq 0 ]; then
-        hasteKey=$(echo $response | jq -r '.key')
-        echo "http://bin.christitus.com/$hasteKey"
-    else
-        echo "Failed to upload the document."
-    fi
-}
-
 #######################################################
 # Set the ultimate amazing command prompt
 #######################################################
 
-alias hug="hugo server -F --bind=10.0.0.97 --baseURL=http://10.0.0.97"
 bind '"\C-f":"zi\n"'
 
 export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
