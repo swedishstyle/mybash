@@ -541,6 +541,7 @@ gcom() {
 	git add .
 	git commit -m "$1"
 }
+
 lazyg() {
 	git add .
 	git commit -m "$1"
