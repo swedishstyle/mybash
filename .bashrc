@@ -214,6 +214,12 @@ alias untar='tar -xvf'
 alias unbz2='tar -xvjf'
 alias ungz='tar -xvzf'
 
+# Alias's for Docker commands
+alias dcup='docker compose up -d'
+alias dcre='docker compose down && docker compose up -d'
+alias dcdown='docker compose down'
+alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"'
+
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
 
