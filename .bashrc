@@ -37,9 +37,9 @@ curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -
 if [ -s "$TEMP_FILE" ]; then
     mv -f "$TEMP_FILE" "$BASHRC_FILE" # no confirm before saving
    # mv  "$TEMP_FILE" "$BASHRC_FILE" # will ask for confrm before saving
-    echo "updated .bashrc successfully."
+    echo ">> Updated .bashrc successfully <<"
 else
-    echo "failed to update .bashrc."
+    echo ">> Failed to update .bashrc <<"
 fi
 ####### end of update #########
 
