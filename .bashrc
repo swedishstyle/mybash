@@ -31,7 +31,6 @@ BASHRC_FILE="$HOME/.bashrc"
 TEMP_FILE=$(mktemp)
 
 # grab updated bash 
-# replace CTT with git username
 curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -o "$TEMP_FILE"
 
 # repalce bash with new
@@ -580,4 +579,5 @@ eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 
 [[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
-eval "$(atuin init bash)"
+#No idea what this is for
+#eval "$(atuin init bash)"
