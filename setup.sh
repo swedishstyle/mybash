@@ -77,6 +77,10 @@ checkEnv() {
 }
 
 installDepend() {
+    #Hardcoding for Ubuntu
+    sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
+    sudo ${PACKAGER} update
+    
     ## Check for dependencies.
     DEPENDENCIES='bash bash-completion tar tree multitail fastfetch tldr trash-cli'
     echo -e "${YELLOW}Installing dependencies...${RC}"
