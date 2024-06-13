@@ -80,7 +80,7 @@ installDepend() {
     #Hardcoding for Ubuntu
     sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
     sudo ${PACKAGER} update
-    
+
     ## Check for dependencies.
     DEPENDENCIES='bash bash-completion tar tree multitail fastfetch tldr trash-cli'
     echo -e "${YELLOW}Installing dependencies...${RC}"
@@ -153,7 +153,14 @@ linkConfig() {
     echo -e "${YELLOW}Linking new bash config file...${RC}"
     ## Make symbolic link.
     ln -svf ${GITPATH}/.bashrc ${USER_HOME}/.bashrc
+
+    #Create .config folder if it does not exist
+    if [[ -d "${USER_HOME}/.config" ]]; then
+        mkdir ~/.config
+    fi
+        
     ln -svf ${GITPATH}/starship.toml ${USER_HOME}/.config/starship.toml
+
 }
 
 checkEnv
