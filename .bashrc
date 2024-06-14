@@ -46,6 +46,7 @@ fi
 #######################################################
 # EXPORTS
 #######################################################
+export PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME%%.*}"'
 
 # Disable the bell
 if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
