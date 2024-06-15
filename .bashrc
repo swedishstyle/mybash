@@ -46,7 +46,6 @@ fi
 #######################################################
 # EXPORTS
 #######################################################
-export PROMPT_COMMAND='echo -ne "\033]0;${USER}@${HOSTNAME%%.*}"'
 
 # Disable the bell
 if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
@@ -248,6 +247,12 @@ alias kssh="kitty +kitten ssh"
 #######################################################
 # SPECIAL FUNCTIONS
 #######################################################
+function title() {
+   # change the title of the current window or tab
+   printf '\033]0;%s\007' "${USER}@${HOSTNAME}"
+}
+title
+
 # Extracts any archive(s) (if unp isn't installed)
 extract() {
 	for archive in "$@"; do
