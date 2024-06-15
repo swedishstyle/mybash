@@ -370,7 +370,7 @@ distribution() {
 			sles|opensuse*)
 				dtype="suse"
 				;;
-			ubuntu|debian)
+			ubuntu|debian|raspbian)
 				dtype="debian"
 				;;
 			gentoo)
