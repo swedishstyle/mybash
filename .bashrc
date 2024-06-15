@@ -593,6 +593,6 @@ export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bi
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 
-[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
 #No idea what this is for
+#[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
 #eval "$(atuin init bash)"
