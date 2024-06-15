@@ -78,8 +78,12 @@ checkEnv() {
 
 installDepend() {
     #Hardcoding for Ubuntu
-    sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
-    sudo ${PACKAGER} update
+    fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+
+    if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
+        sudo ${PACKAGER} update
+    fi
 
     ## Check for dependencies.
     DEPENDENCIES='bash bash-completion tar tree multitail fastfetch tldr trash-cli'
@@ -155,12 +159,9 @@ linkConfig() {
     ln -svf ${GITPATH}/.bashrc ${USER_HOME}/.bashrc
 
     #Create .config folder if it does not exist
-    if [[ -d "${USER_HOME}/.config" ]]; then
-        mkdir ~/.config
-    fi
-        
-    ln -svf ${GITPATH}/starship.toml ${USER_HOME}/.config/starship.toml
+    mkdir -p ${USER_HOME}/.config
 
+    ln -svf ${GITPATH}/starship.toml ${USER_HOME}/.config/starship.toml
 }
 
 checkEnv
