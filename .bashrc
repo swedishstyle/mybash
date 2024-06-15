@@ -244,9 +244,19 @@ alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
 
 alias kssh="kitty +kitten ssh"
 
+alias upall="sudo apt-get update && sudo apt-get dist-upgrade -y"
+
 #######################################################
 # SPECIAL FUNCTIONS
 #######################################################
+#Install QEMU guest agent if the machine is detected to be a Proxmox VM
+function installQemuAgent() {
+	if grep -q "KVM" /proc/cpuinfo; then
+		sudo apt-get install -y qemu-guest-agent
+	fi
+}
+
+#Set title to username@hostname
 function title() {
    # change the title of the current window or tab
    printf '\033]0;%s\007' "${USER}@${HOSTNAME}"
