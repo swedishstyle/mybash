@@ -370,8 +370,11 @@ distribution() {
 			sles|opensuse*)
 				dtype="suse"
 				;;
-			ubuntu|debian|raspbian)
+			ubuntu|debian)
 				dtype="debian"
+				;;
+			raspbian)
+				dtype="raspbian"
 				;;
 			gentoo)
 				dtype="gentoo"
@@ -408,7 +411,7 @@ ver() {
 		"suse")
 			cat /etc/SuSE-release
 			;;
-		"debian")
+		"debian"|"raspbian")
 			lsb_release -a
 			;;
 		"gentoo")
@@ -453,6 +456,17 @@ install_bashrc_support() {
 			
 			# Install the downloaded deb file using apt-get
 			sudo apt-get install /tmp/fastfetch_latest_amd64.deb
+			;;
+		"raspbian")
+			sudo apt-get install multitail tree zoxide trash-cli fzf bash-completion
+			# Fetch the latest fastfetch release URL for raspbian ARM file
+			FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-armv7l.deb" | cut -d '"' -f 4)
+			
+			# Download the latest fastfetch deb file
+			curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_armv7l.deb
+			
+			# Install the downloaded deb file using apt-get
+			sudo apt-get install /tmp/fastfetch_latest_armv7l.deb
 			;;
 		"arch")
 			sudo paru multitail tree zoxide trash-cli fzf bash-completion fastfetch
