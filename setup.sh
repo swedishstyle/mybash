@@ -78,11 +78,46 @@ checkEnv() {
 
 installDepend() {
     #Hardcoding for Ubuntu
-    fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+	local dtype="unknown"  # Default to unknown
 
-    if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-        sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
-        sudo ${PACKAGER} update
+	# Use /etc/os-release for modern distro identification
+	if [ -r /etc/os-release ]; then
+		source /etc/os-release
+		case $ID in
+			fedora|rhel|centos)
+				dtype="redhat"
+				;;
+			sles|opensuse*)
+				dtype="suse"
+				;;
+			debian)
+				dtype="debian"
+				;;
+            ubuntu)
+				dtype="ubuntu"
+				;;
+			gentoo)
+				dtype="gentoo"
+				;;
+			arch)
+				dtype="arch"
+				;;
+			slackware)
+				dtype="slackware"
+				;;
+			*)
+				# If ID is not recognized, keep dtype as unknown
+				;;
+		esac
+	fi
+
+	if $dtype == "ubuntu"
+        fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+
+        if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+            sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
+            sudo ${PACKAGER} update
+        fi
     fi
 
     ## Check for dependencies.
