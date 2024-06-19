@@ -210,7 +210,13 @@ linkConfig() {
 }
 
 checkEnv
-installDocker
+
+if command -v docker &> /dev/null; then
+    echo "Docker installation found"
+else
+    installDocker
+fi
+
 installDepend
 installStarship
 installZoxide
