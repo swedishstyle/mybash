@@ -127,7 +127,6 @@ installDepend() {
 
 	if $dtype == "ubuntu"
         fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
-
         if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
             sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
             sudo ${PACKAGER} update
