@@ -40,9 +40,13 @@ installDocker() {
     curl -sSL https://github.com/docker/compose/releases/download/$LATEST/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
     chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
     
-    sudo groupadd docker
+    if [ $(getent group docker) ]; then
+        echo "Docker group exists"
+    else
+        sudo groupadd docker
+    fi
+    
     sudo usermod -aG docker $USER
-    newgrp docker
 }
 
 checkEnv() {
