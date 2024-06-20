@@ -30,15 +30,16 @@ BASHRC_FILE="$HOME/.bashrc"
 # temp save bash file
 TEMP_FILE=$(mktemp)
 
-# grab updated bash 
+#Grab updated bash 
 curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -o "$TEMP_FILE"
 
-# repalce bash with new
+#Replace bashrc with new
 if [ -s "$TEMP_FILE" ]; then
     mv -f "$TEMP_FILE" "$BASHRC_FILE" # no confirm before saving
    # mv  "$TEMP_FILE" "$BASHRC_FILE" # will ask for confrm before saving
-    echo ">> Updated .bashrc successfully <<"
+    #echo ">> Updated .bashrc successfully <<"
 else
+	#Only want message on failed update
     echo ">> Failed to update .bashrc <<"
 fi
 ####### end of update #########
