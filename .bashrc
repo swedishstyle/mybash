@@ -75,15 +75,6 @@ if [[ $iatest -gt 0 ]]; then bind "set completion-ignore-case on"; fi
 # Show auto-completion list automatically, without double tab
 if [[ $iatest -gt 0 ]]; then bind "set show-all-if-ambiguous On"; fi
 
-# Set the default editor
-#export EDITOR=nvim
-#export VISUAL=nvim
-#alias pico='edit'
-#alias spico='sedit'
-#alias nano='edit'
-#alias snano='sedit'
-#alias vim='nvim'
-
 # To have colors for ls and all grep commands such as grep, egrep and zgrep
 export CLICOLOR=1
 export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.avi=01;35:*.fli=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
@@ -145,10 +136,6 @@ alias less='less -R'
 alias cls='clear'
 alias apt-get='sudo apt-get'
 alias multitail='multitail --no-repeat -c'
-alias freshclam='sudo freshclam'
-alias vi='nvim'
-alias svi='sudo vi'
-alias vis='nvim "+set si"'
 
 # Change directory aliases
 alias home='cd ~'
@@ -234,9 +221,9 @@ alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
 # Docker swarm commands
-alias dsup='docker swarm deploy -c compose.yaml $1'
-alias dsdown='docker stack rm $1'
-alias dsps='docker stack ps --no-trunc $1'
+alias dsup='docker swarm deploy -c compose.yaml \$1'
+alias dsdown='docker stack rm \$1'
+alias dsps='docker stack ps --no-trunc \$1'
 alias dsls='docker stack ls'
 
 # Show all logs in /var/log
@@ -246,10 +233,6 @@ alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' 
 alias sha1='openssl sha1'
 
 alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
-
-# KITTY - alias to be able to use kitty features when connecting to remote servers(e.g use tmux on remote server)
-
-alias kssh="kitty +kitten ssh"
 
 alias upall="sudo apt-get update && sudo apt-get dist-upgrade -y"
 
