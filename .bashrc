@@ -221,7 +221,7 @@ alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
 # Docker swarm commands
-alias dsup='docker swarm deploy -c compose.yaml \$1'
+alias dsup='docker stack deploy -c compose.yaml \$1'
 alias dsdown='docker stack rm \$1'
 alias dsps='docker stack ps --no-trunc \$1'
 alias dsls='docker stack ls'
