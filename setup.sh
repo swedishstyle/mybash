@@ -97,7 +97,6 @@ checkEnv() {
 }
 
 installDepend() {
-    #Hardcoding for Ubuntu
 	local dtype="unknown"  # Default to unknown
 
 	# Use /etc/os-release for modern distro identification

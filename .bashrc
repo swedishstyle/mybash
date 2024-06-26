@@ -484,6 +484,7 @@ install_bashrc_support() {
 			;;
 	esac
 }
+install_bashrc_support
 
 # IP address lookup
 alias whatismyip="whatsmyip"
