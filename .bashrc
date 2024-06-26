@@ -221,10 +221,21 @@ alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
 # Docker swarm commands
-alias dsup='docker stack deploy -c compose.yaml \$1'
-alias dsdown='docker stack rm \$1'
-alias dsps='docker stack ps --no-trunc \$1'
-alias dsls='docker stack ls'
+function dsup() {
+	docker stack deploy --compose-file compose.yaml $1
+}
+
+function dsdown() {
+	docker stack rm $1
+}
+
+function dsps() {
+	docker stack ps --no-trunc $1
+}
+
+function dsls() {
+	docker service ls
+}
 
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
@@ -484,7 +495,6 @@ install_bashrc_support() {
 			;;
 	esac
 }
-#install_bashrc_support
 
 # IP address lookup
 alias whatismyip="whatsmyip"
