@@ -233,6 +233,12 @@ alias dcre='docker compose down && docker compose up -d'
 alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 
+# Docker swarm commands
+alias dsup='docker swarm deploy -c compose.yaml $1'
+alias dsdown='docker stack rm $1'
+alias dsps='docker stack ps --no-trunc $1'
+alias dsls='docker stack ls'
+
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
 
