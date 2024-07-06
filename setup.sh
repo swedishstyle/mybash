@@ -39,7 +39,24 @@ installDocker() {
     LATEST=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
     DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
     mkdir -p $DOCKER_CONFIG/cli-plugins
-    curl -sSL https://github.com/docker/compose/releases/download/$LATEST/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)
+            curl -sSL https://github.com/docker/compose/releases/download/$LATEST/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+            ;;
+        i686 | i386)
+            echo "32-bit architecture detected, wtf"
+            ;;
+        arm* | aarch64)
+            curl -sSL https://github.com/docker/compose/releases/download/$LATEST/docker-compose-linux-aarch64 -o ~/.docker/cli-plugins/docker-compose
+            ;;
+        *)
+            echo "Unknown architecture: $ARCH"
+            # Add a fallback command or an error message here
+            ;;
+    esac
+
     chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
     
     if [ $(getent group docker) ]; then
@@ -98,6 +115,7 @@ checkEnv() {
 
 installDepend() {
 	local dtype="unknown"  # Default to unknown
+    ARCH=$(uname -m)
 
 	# Use /etc/os-release for modern distro identification
 	if [ -r /etc/os-release ]; then
@@ -114,11 +132,29 @@ installDepend() {
 				;;
             ubuntu)
 				dtype="ubuntu"
-                fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
-                if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-                    sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
-                    sudo ${PACKAGER} update
-                fi
+                
+                case "$ARCH" in
+                    x86_64)
+                        fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+                        if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+                            sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
+                            sudo ${PACKAGER} update
+                        fi
+                        ;;
+                    arm* | aarch64)
+                        FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-armvhf.deb" | cut -d '"' -f 4)
+			
+                        # Download the latest fastfetch deb file
+                        curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_armvhf.deb
+                        
+                        # Install the downloaded deb file using apt-get
+                        sudo apt-get install /tmp/fastfetch_latest_armvhf.deb
+                        ;;
+                    *)
+                        echo "Unknown architecture: $ARCH"
+                        # Add a fallback command or an error message here
+                        ;;
+                esac
 				;;
 			gentoo)
 				dtype="gentoo"

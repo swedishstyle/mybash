@@ -476,13 +476,13 @@ install_bashrc_support() {
 		"raspbian")
 			sudo apt-get install multitail tree zoxide trash-cli fzf bash-completion
 			# Fetch the latest fastfetch release URL for raspbian ARM file
-			FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-armv7l.deb" | cut -d '"' -f 4)
+			FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-armvhf.deb" | cut -d '"' -f 4)
 			
 			# Download the latest fastfetch deb file
-			curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_armv7l.deb
+			curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_armvhf.deb
 			
 			# Install the downloaded deb file using apt-get
-			sudo apt-get install /tmp/fastfetch_latest_armv7l.deb
+			sudo apt-get install /tmp/fastfetch_latest_armvhf.deb
 			;;
 		"arch")
 			sudo paru multitail tree zoxide trash-cli fzf bash-completion fastfetch
