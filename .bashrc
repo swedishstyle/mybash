@@ -1,13 +1,14 @@
-#!/bin/bash
-[ -z "$PS1" ] && return
-
+#!/usr/bin/env bash
 iatest=$(expr index "$-" i)
 
 #######################################################
-# SOURCED ALIAS'S AND SCRIPTS BY zachbrowne.me
+# SOURCED ALIASES AND SCRIPTS BY zachbrowne.me
 #######################################################
-if [ -f /usr/bin/fastfetch ]; then
-	fastfetch
+if command -v fastfetch &> /dev/null; then
+    # Only run fastfetch if we're in an interactive shell
+    if [[ $- == *i* ]]; then
+        fastfetch
+    fi
 fi
 
 # Source global definitions
@@ -38,7 +39,6 @@ curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -
 #Replace bashrc with new
 if [ -s "$TEMP_FILE" ]; then
     mv -f "$TEMP_FILE" "$BASHRC_FILE" # no confirm before saving
-   # mv  "$TEMP_FILE" "$BASHRC_FILE" # will ask for confrm before saving
     #[[ $- == *i* ]] && echo ">> Updated .bashrc successfully <<"
 else
 	#Only want message on failed update
@@ -56,6 +56,7 @@ if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
 # Expand the history size
 export HISTFILESIZE=10000
 export HISTSIZE=500
+export HISTTIMEFORMAT="%F %T" # add timestamp to history
 
 # Don't put duplicate lines in the history and do not add lines that start with a space
 export HISTCONTROL=erasedups:ignoredups:ignorespace
@@ -66,6 +67,15 @@ shopt -s checkwinsize
 # Causes bash to append to history instead of overwriting it so if you start a new terminal, you have old session history
 shopt -s histappend
 PROMPT_COMMAND='history -a'
+
+# set up XDG folders
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_STATE_HOME="$HOME/.local/state"
+export XDG_CACHE_HOME="$HOME/.cache"
+
+# Seeing as other scripts will use it might as well export it
+export LINUXTOOLBOXDIR="$HOME/linuxtoolbox"
 
 # Allow ctrl-S for history navigation (with ctrl-R)
 [[ $- == *i* ]] && stty -ixon
@@ -80,8 +90,14 @@ if [[ $iatest -gt 0 ]]; then bind "set show-all-if-ambiguous On"; fi
 # To have colors for ls and all grep commands such as grep, egrep and zgrep
 export CLICOLOR=1
 export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.avi=01;35:*.fli=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
-#export GREP_OPTIONS='--color=auto' #deprecated
-alias grep="/usr/bin/grep $GREP_OPTIONS"
+# Check if ripgrep is installed
+if command -v rg &> /dev/null; then
+    # Alias grep to rg if ripgrep is installed
+    alias grep='rg'
+else
+    # Alias grep to /usr/bin/grep with GREP_OPTIONS if ripgrep is not installed
+    alias grep="/usr/bin/grep $GREP_OPTIONS"
+fi
 unset GREP_OPTIONS
 
 # Color for manpages in less makes manpages a little easier to read
@@ -94,22 +110,22 @@ export LESS_TERMCAP_ue=$'\E[0m'
 export LESS_TERMCAP_us=$'\E[01;32m'
 
 #######################################################
-# MACHINE SPECIFIC ALIAS'S
+# MACHINE SPECIFIC ALIASES
 #######################################################
 
-# Alias's for SSH
+# aliases for SSH
 # alias SERVERNAME='ssh YOURWEBSITE.com -l USERNAME -p PORTNUMBERHERE'
 
-# Alias's to change the directory
+# aliases to change the directory
 alias web='cd /var/www/html'
 
-# Alias's to mount ISO files
+# aliases to mount ISO files
 # mount -o loop /home/NAMEOFISO.iso /home/ISOMOUNTDIR/
 # umount /home/NAMEOFISO.iso
 # (Both commands done as root only.)
 
 #######################################################
-# GENERAL ALIAS'S
+# GENERAL ALIASES
 #######################################################
 # To temporarily bypass an alias, we precede the command with a \
 # EG: the ls command is aliased, but to use the normal ls command you would type \ls
@@ -127,17 +143,25 @@ alias hlp='less ~/.bashrc_help'
 # alias to show the date
 alias da='date "+%Y-%m-%d %A %T %Z"'
 
-# Alias's to modified commands
+# aliases to modified commands
 alias cp='cp -i'
 alias mv='mv -i'
-alias rm='trash -v'
+if command -v trash &> /dev/null; then
+    alias rm='trash -v'
+else
+    alias rm='rm -i'  # fallback to interactive remove
+fi
 alias mkdir='mkdir -p'
 alias ps='ps auxf'
-alias ping='ping -c 10'
 alias less='less -R'
 alias cls='clear'
 alias apt-get='sudo apt-get'
 alias multitail='multitail --no-repeat -c'
+alias freshclam='sudo freshclam'
+alias vi='nvim'
+alias svi='sudo vi'
+alias vis='nvim "+set si"'
+
 
 # Change directory aliases
 alias home='cd ~'
@@ -153,21 +177,24 @@ alias bd='cd "$OLDPWD"'
 # Remove a directory and all files
 alias rmd='/bin/rm  --recursive --force --verbose '
 
-# Alias's for multiple directory listing commands
-alias la='ls -Alh'                 # show hidden files
+# aliases for multiple directory listing commands
+alias la='ls -Alh'                # show hidden files
 alias ls='ls -laFh --color=always' # add colors and file type extensions
-alias lx='ls -lXBh'                # sort by extension
-alias lk='ls -lSrh'                # sort by size
-alias lc='ls -lcrh'                # sort by change time
-alias lu='ls -lurh'                # sort by access time
-alias lr='ls -lRh'                 # recursive ls
-alias lt='ls -ltrh'                # sort by date
-alias lm='ls -alh |more'           # pipe through 'more'
-alias lw='ls -xAh'                 # wide listing format
-alias ll='ls -Fls'                 # long listing format
-alias labc='ls -lap'               #alphabetical sort
-alias lf="ls -l | egrep -v '^d'"   # files only
-alias ldir="ls -l | egrep '^d'"    # directories only
+alias lx='ls -lXBh'               # sort by extension
+alias lk='ls -lSrh'               # sort by size
+alias lc='ls -ltcrh'              # sort by change time
+alias lu='ls -lturh'              # sort by access time
+alias lr='ls -lRh'                # recursive ls
+alias lt='ls -ltrh'               # sort by date
+alias lm='ls -alh |more'          # pipe through 'more'
+alias lw='ls -xAh'                # wide listing format
+alias ll='ls -Fls'                # long listing format
+alias labc='ls -lap'              # alphabetical sort
+alias lf="ls -l | egrep -v '^d'"  # files only
+alias ldir="ls -l | egrep '^d'"   # directories only
+alias lla='ls -Al'                # List and Hidden Files
+alias las='ls -A'                 # Hidden Files
+alias lls='ls -l'                 # List
 
 # alias chmod commands
 alias mx='chmod a+x'
@@ -196,19 +223,19 @@ alias checkcommand="type -t"
 # Show open ports
 alias openports='netstat -nape --inet'
 
-# Alias's for safe and forced reboots
+# aliases for safe and forced reboots
 alias rebootsafe='sudo shutdown -r now'
 alias rebootforce='sudo shutdown -r -n now'
 
-# Alias's to show disk space and space used in a folder
-alias diskspace="du -Sm | sort -n -r | more"
-alias folders='du -hm --max-depth=1'
-alias folderssort='find . -maxdepth 1 -type d -print0 | xargs -0 du -skm | sort -rn'
+# aliases to show disk space and space used in a folder
+alias diskspace="du -S | sort -n -r |more"
+alias folders='du -h --max-depth=1'
+alias folderssort='find . -maxdepth 1 -type d -print0 | xargs -0 du -sk | sort -rn'
 alias tree='tree -CAhF --dirsfirst'
 alias treed='tree -CAFd'
 alias mountedinfo='df -hT'
 
-# Alias's for archives
+# aliases for archives
 alias mktar='tar -cvf'
 alias mkbz2='tar -cvjf'
 alias mkgz='tar -cvzf'
@@ -221,23 +248,14 @@ alias dcup='docker compose up -d'
 alias dcre='docker compose down && docker compose up -d'
 alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
+alias docker-clean=' \
+  docker container prune -f ; \
+  docker image prune -f ; \
+  docker network prune -f ; \
+  docker volume prune -f '
 
-# Docker swarm commands
-function dsup() {
-	docker stack deploy --compose-file compose.yaml $1
-}
-
-function dsdown() {
-	docker stack rm $1
-}
-
-function dsps() {
-	docker stack ps --no-trunc $1
-}
-
-function dsls() {
-	docker service ls
-}
+# Kubernetes alias'
+alias k='kubectl'
 
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
@@ -361,7 +379,8 @@ up() {
 }
 
 # Automatically do an ls after each cd, z, or zoxide
-cd () {
+cd ()
+{
 	if [ -n "$1" ]; then
 		builtin cd "$@" && ls
 	else
@@ -375,7 +394,7 @@ pwdtail() {
 }
 
 # Show the current distribution
-distribution() {
+distribution () {
 	local dtype="unknown"  # Default to unknown
 
 	# Use /etc/os-release for modern distro identification
@@ -397,20 +416,52 @@ distribution() {
 			gentoo)
 				dtype="gentoo"
 				;;
-			arch)
+			arch|manjaro)
 				dtype="arch"
 				;;
 			slackware)
 				dtype="slackware"
 				;;
 			*)
-				# If ID is not recognized, keep dtype as unknown
+				# Check ID_LIKE only if dtype is still unknown
+                if [ -n "$ID_LIKE" ]; then
+                    case $ID_LIKE in
+                        *fedora*|*rhel*|*centos*)
+                            dtype="redhat"
+                            ;;
+                        *sles*|*opensuse*)
+                            dtype="suse"
+                            ;;
+                        *ubuntu*|*debian*)
+                            dtype="debian"
+                            ;;
+                        *gentoo*)
+                            dtype="gentoo"
+                            ;;
+                        *arch*)
+                            dtype="arch"
+                            ;;
+                        *slackware*)
+                            dtype="slackware"
+                            ;;
+                    esac
+                fi
+                # If ID or ID_LIKE is not recognized, keep dtype as unknown
 				;;
 		esac
 	fi
 
 	echo $dtype
 }
+
+DISTRIBUTION=$(distribution)
+if command -v bat &> /dev/null || command -v batcat &> /dev/null; then
+    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ]; then
+        alias cat='bat'
+    else
+        alias cat='batcat'
+    fi
+fi
 
 # Show the current version of the operating system
 ver() {
@@ -603,14 +654,18 @@ lazyg() {
 # Set the ultimate amazing command prompt
 #######################################################
 
-bind '"\C-f":"zi\n"'
+# Check if the shell is interactive
+if [[ $- == *i* ]]; then
+    # Bind Ctrl+f to insert 'zi' followed by a newline
+    bind '"\C-f":"zi\n"'
+fi
 
 export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
 
-# Install Starship - curl -sS https://starship.rs/install.sh | sh
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
 
-#No idea what this is for
-#[[ -f ~/.bash-preexec.sh ]] && source ~/.bash-preexec.sh
-#eval "$(atuin init bash)"
+# Auto-start DWM if we're on TTY1 and .xinitrc contains "exec dwm"
+if [[ "$(tty)" == "/dev/tty1" ]] && [ -f "$HOME/.xinitrc" ] && grep -q "^exec dwm" "$HOME/.xinitrc"; then
+    startx
+fi

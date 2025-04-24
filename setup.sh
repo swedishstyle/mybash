@@ -1,34 +1,24 @@
-#!/bin/bash
+#!/bin/sh -e
 
-RC='\e[0m'
-RED='\e[31m'
-YELLOW='\e[33m'
-GREEN='\e[32m'
+# Define color codes using tput for better compatibility
+RC=$(tput sgr0)
+RED=$(tput setaf 1)
+YELLOW=$(tput setaf 3)
+GREEN=$(tput setaf 2)
 
-# Check if the home directory and linuxtoolbox folder exist, create them if they don't
 LINUXTOOLBOXDIR="$HOME/linuxtoolbox"
+PACKAGER=""
+SUDO_CMD=""
+SUGROUP=""
+GITPATH=""
 
-if [[ ! -d "$LINUXTOOLBOXDIR" ]]; then
-    echo -e "${YELLOW}Creating linuxtoolbox directory: $LINUXTOOLBOXDIR${RC}"
-    mkdir -p "$LINUXTOOLBOXDIR"
-    echo -e "${GREEN}linuxtoolbox directory created: $LINUXTOOLBOXDIR${RC}"
-fi
-
-if [[ ! -d "$LINUXTOOLBOXDIR/mybash" ]]; then
-    echo -e "${YELLOW}Cloning mybash repository into: $LINUXTOOLBOXDIR/mybash${RC}"
-    git clone https://github.com/swedishstyle/mybash "$LINUXTOOLBOXDIR/mybash"
-    if [[ $? -eq 0 ]]; then
-        echo -e "${GREEN}Successfully cloned mybash repository${RC}"
-    else
-        echo -e "${RED}Failed to clone mybash repository${RC}"
-        exit 1
-    fi
-fi
-
-cd "$LINUXTOOLBOXDIR/mybash"
+# Helper functions
+print_colored() {
+    printf "${1}%s${RC}\n" "$2"
+}
 
 command_exists() {
-    command -v $1 >/dev/null 2>&1
+    command -v "$1" >/dev/null 2>&1
 }
 
 installDocker() {
@@ -68,202 +58,266 @@ installDocker() {
     sudo usermod -aG docker $USER
 }
 
-checkEnv() {
-    ## Check for requirements.
+# Setup functions
+setup_directories() {
+    if [ ! -d "$LINUXTOOLBOXDIR" ]; then
+        print_colored "$YELLOW" "Creating linuxtoolbox directory: $LINUXTOOLBOXDIR"
+        mkdir -p "$LINUXTOOLBOXDIR"
+        print_colored "$GREEN" "linuxtoolbox directory created: $LINUXTOOLBOXDIR"
+    fi
+
+    if [ -d "$LINUXTOOLBOXDIR/mybash" ]; then rm -rf "$LINUXTOOLBOXDIR/mybash"; fi
+
+    print_colored "$YELLOW" "Cloning mybash repository into: $LINUXTOOLBOXDIR/mybash"
+    if git clone https://github.com/ChrisTitusTech/mybash "$LINUXTOOLBOXDIR/mybash"; then
+        print_colored "$GREEN" "Successfully cloned mybash repository"
+    else
+        print_colored "$RED" "Failed to clone mybash repository"
+        exit 1
+    fi
+
+    cd "$LINUXTOOLBOXDIR/mybash" || exit
+}
+
+check_environment() {
+    # Check for required commands
     REQUIREMENTS='curl groups sudo'
-    if ! command_exists ${REQUIREMENTS}; then
-        echo -e "${RED}To run me, you need: ${REQUIREMENTS}${RC}"
-        exit 1
-    fi
-
-    ## Check Package Handeler
-    PACKAGEMANAGER='apt yum dnf pacman zypper'
-    for pgm in ${PACKAGEMANAGER}; do
-        if command_exists ${pgm}; then
-            PACKAGER=${pgm}
-            echo -e "Using ${pgm}"
+    for req in $REQUIREMENTS; do
+        if ! command_exists "$req"; then
+            print_colored "$RED" "To run me, you need: $REQUIREMENTS"
+            exit 1
         fi
     done
 
-    if [ -z "${PACKAGER}" ]; then
-        echo -e "${RED}Can't find a supported package manager"
+    # Determine package manager
+    PACKAGEMANAGER='nala apt dnf yum pacman zypper emerge xbps-install nix-env'
+    for pgm in $PACKAGEMANAGER; do
+        if command_exists "$pgm"; then
+            PACKAGER="$pgm"
+            printf "Using %s\n" "$pgm"
+            break
+        fi
+    done
+
+    if [ -z "$PACKAGER" ]; then
+        print_colored "$RED" "Can't find a supported package manager"
         exit 1
     fi
 
-    ## Check if the current directory is writable.
-    GITPATH="$(dirname "$(realpath "$0")")"
-    if [[ ! -w ${GITPATH} ]]; then
-        echo -e "${RED}Can't write to ${GITPATH}${RC}"
+    # Determine sudo command
+    if command_exists sudo; then
+        SUDO_CMD="sudo"
+    elif command_exists doas && [ -f "/etc/doas.conf" ]; then
+        SUDO_CMD="doas"
+    else
+        SUDO_CMD="su -c"
+    fi
+    printf "Using %s as privilege escalation software\n" "$SUDO_CMD"
+
+    # Check write permissions
+    GITPATH=$(dirname "$(realpath "$0")")
+    if [ ! -w "$GITPATH" ]; then
+        print_colored "$RED" "Can't write to $GITPATH"
         exit 1
     fi
 
-    ## Check SuperUser Group
+    # Check superuser group
     SUPERUSERGROUP='wheel sudo root'
-    for sug in ${SUPERUSERGROUP}; do
-        if groups | grep ${sug}; then
-            SUGROUP=${sug}
-            echo -e "Super user group ${SUGROUP}"
+    for sug in $SUPERUSERGROUP; do
+        if groups | grep -q "$sug"; then
+            SUGROUP="$sug"
+            printf "Super user group %s\n" "$SUGROUP"
+            break
         fi
     done
 
-    ## Check if member of the sudo group.
-    if ! groups | grep ${SUGROUP} >/dev/null; then
-        echo -e "${RED}You need to be a member of the sudo group to run me!"
+    if ! groups | grep -q "$SUGROUP"; then
+        print_colored "$RED" "You need to be a member of the sudo group to run me!"
         exit 1
     fi
 }
 
-installDepend() {
-	local dtype="unknown"  # Default to unknown
-    ARCH=$(uname -m)
+install_dependencies() {
+    DEPENDENCIES='bash bash-completion tar bat tree multitail fastfetch wget unzip fontconfig trash-cli'
+    if ! command_exists nvim; then
+        DEPENDENCIES="${DEPENDENCIES} neovim"
+    fi
 
-	# Use /etc/os-release for modern distro identification
-	if [ -r /etc/os-release ]; then
-		source /etc/os-release
-		case $ID in
-			fedora|rhel|centos)
-				dtype="redhat"
-				;;
-			sles|opensuse*)
-				dtype="suse"
-				;;
-			debian)
-				dtype="debian"
-				;;
-            ubuntu)
-				dtype="ubuntu"
-                
-                case "$ARCH" in
-                    x86_64)
-                        fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
-                        if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-                            sudo add-apt-repository ppa:zhangsongcui3371/fastfetch
-                            sudo ${PACKAGER} update
-                        fi
-                        ;;
-                    arm* | aarch64)
-                        FASTFETCH_URL=$(curl -s https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest | grep "browser_download_url.*linux-armvhf.deb" | cut -d '"' -f 4)
-			
-                        # Download the latest fastfetch deb file
-                        curl -sL $FASTFETCH_URL -o /tmp/fastfetch_latest_armvhf.deb
-                        
-                        # Install the downloaded deb file using apt-get
-                        sudo apt-get install /tmp/fastfetch_latest_armvhf.deb
-                        ;;
-                    *)
-                        echo "Unknown architecture: $ARCH"
-                        # Add a fallback command or an error message here
-                        ;;
-                esac
-				;;
-			gentoo)
-				dtype="gentoo"
-				;;
-			arch)
-				dtype="arch"
-				;;
-			slackware)
-				dtype="slackware"
-				;;
-			*)
-				# If ID is not recognized, keep dtype as unknown
-				;;
-		esac
-	fi
+    print_colored "$YELLOW" "Installing dependencies..."
+    case "$PACKAGER" in
+        pacman)
+            install_pacman_dependencies
+            ;;
+        nala)
+            ${SUDO_CMD} ${PACKAGER} install -y ${DEPENDENCIES}
+            ;;
+        emerge)
+            ${SUDO_CMD} ${PACKAGER} -v app-shells/bash app-shells/bash-completion app-arch/tar app-editors/neovim sys-apps/bat app-text/tree app-text/multitail app-misc/fastfetch app-misc/trash-cli
+            ;;
+        xbps-install)
+            ${SUDO_CMD} ${PACKAGER} -v ${DEPENDENCIES}
+            ;;
+        nix-env)
+            ${SUDO_CMD} ${PACKAGER} -iA nixos.bash nixos.bash-completion nixos.gnutar nixos.neovim nixos.bat nixos.tree nixos.multitail nixos.fastfetch nixos.pkgs.starship nixos.trash-cli
+            ;;
+        dnf)
+            ${SUDO_CMD} ${PACKAGER} install -y ${DEPENDENCIES}
+            ;;
+        zypper)
+            ${SUDO_CMD} ${PACKAGER} install -n ${DEPENDENCIES}
+            ;;
+        *)
+            #Fix for Ubuntu 64 bit
+            if(source /etc/os-release && [[ "$ID" == "ubuntu" ]]); then
+                fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+                if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+                    sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y > /dev/null 2>&1
+                    sudo apt update
+                fi
+            fi
+            ${SUDO_CMD} ${PACKAGER} install -yq ${DEPENDENCIES}
+            ;;
+    esac
 
-    ## Check for dependencies.
-    DEPENDENCIES='bash bash-completion tar tree multitail fastfetch tldr trash-cli'
-    echo -e "${YELLOW}Installing dependencies...${RC}"
-    if [[ $PACKAGER == "pacman" ]]; then
-        if ! command_exists yay && ! command_exists paru; then
-            echo "Installing yay as AUR helper..."
-            sudo ${PACKAGER} --noconfirm -S base-devel
-            cd /opt && sudo git clone https://aur.archlinux.org/yay-git.git && sudo chown -R ${USER}:${USER} ./yay-git
-            cd yay-git && makepkg --noconfirm -si
+    install_font
+}
+
+install_pacman_dependencies() {
+    if ! command_exists yay && ! command_exists paru; then
+        printf "Installing yay as AUR helper...\n"
+        ${SUDO_CMD} ${PACKAGER} --noconfirm -S base-devel
+        cd /opt && ${SUDO_CMD} git clone https://aur.archlinux.org/yay-git.git && ${SUDO_CMD} chown -R "${USER}:${USER}" ./yay-git
+        cd yay-git && makepkg --noconfirm -si
+    else
+        printf "AUR helper already installed\n"
+    fi
+    if command_exists yay; then
+        AUR_HELPER="yay"
+    elif command_exists paru; then
+        AUR_HELPER="paru"
+    else
+        printf "No AUR helper found. Please install yay or paru.\n"
+        exit 1
+    fi
+    ${AUR_HELPER} --noconfirm -S ${DEPENDENCIES}
+}
+
+install_font() {
+    FONT_NAME="MesloLGS Nerd Font Mono"
+    if fc-list :family | grep -iq "$FONT_NAME"; then
+        printf "Font '%s' is installed.\n" "$FONT_NAME"
+    else
+        printf "Installing font '%s'\n" "$FONT_NAME"
+        FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Meslo.zip"
+        FONT_DIR="$HOME/.local/share/fonts"
+        if wget -q --spider "$FONT_URL"; then
+            TEMP_DIR=$(mktemp -d)
+            wget -q $FONT_URL -O "$TEMP_DIR"/"${FONT_NAME}".zip
+            unzip "$TEMP_DIR"/"${FONT_NAME}".zip -d "$TEMP_DIR"
+            mkdir -p "$FONT_DIR"/"$FONT_NAME"
+            mv "${TEMP_DIR}"/*.ttf "$FONT_DIR"/"$FONT_NAME"
+            # Update the font cache
+            fc-cache -fv
+            rm -rf "${TEMP_DIR}"
+            printf "'%s' installed successfully.\n" "$FONT_NAME"
         else
-            echo "Aur helper already installed"
+            printf "Font '%s' not installed. Font URL is not accessible.\n" "$FONT_NAME"
         fi
-        if command_exists yay; then
-            AUR_HELPER="yay"
-        elif command_exists paru; then
-            AUR_HELPER="paru"
-        else
-            echo "No AUR helper found. Please install yay or paru."
+    fi
+}
+
+install_starship_and_fzf() {
+    if ! command_exists starship; then
+        if ! curl -sS https://starship.rs/install.sh | sh; then
+            print_colored "$RED" "Something went wrong during starship install!"
             exit 1
         fi
-        ${AUR_HELPER} --noconfirm -S ${DEPENDENCIES}
     else
-        sudo ${PACKAGER} install -yq ${DEPENDENCIES}
+        printf "Starship already installed\n"
+    fi
+
+    if ! command_exists fzf; then
+        if [ -d "$HOME/.fzf" ]; then
+            print_colored "$YELLOW" "FZF directory already exists. Skipping installation."
+        else
+            git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+            ~/.fzf/install
+        fi
+    else
+        printf "Fzf already installed\n"
     fi
 }
 
-installStarship() {
-    if command_exists starship; then
-        echo "Starship already installed"
-        return
+install_zoxide() {
+    if ! command_exists zoxide; then
+        if ! curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh; then
+            print_colored "$RED" "Something went wrong during zoxide install!"
+            exit 1
+        fi
+    else
+        printf "Zoxide already installed\n"
     fi
+}
 
-    if ! curl -sS https://starship.rs/install.sh | sh; then
-        echo -e "${RED}Something went wrong during starship install!${RC}"
+create_fastfetch_config() {
+    USER_HOME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)
+    CONFIG_DIR="$USER_HOME/.config/fastfetch"
+    CONFIG_FILE="$CONFIG_DIR/config.jsonc"
+    
+    mkdir -p "$CONFIG_DIR"
+    [ -e "$CONFIG_FILE" ] && rm -f "$CONFIG_FILE"
+    
+    if ! ln -svf "$GITPATH/config.jsonc" "$CONFIG_FILE"; then
+        print_colored "$RED" "Failed to create symbolic link for fastfetch config"
         exit 1
     fi
-    if command_exists fzf; then
-        echo "Fzf already installed"
-    else
-        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-        ~/.fzf/install
-    fi
 }
 
-installZoxide() {
-    if command_exists zoxide; then
-        echo "Zoxide already installed"
-        return
-    fi
-
-    if ! curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh; then
-        echo -e "${RED}Something went wrong during zoxide install!${RC}"
-        exit 1
-    fi
-}
-
-linkConfig() {
-    ## Get the correct user home directory.
-    USER_HOME=$(getent passwd ${SUDO_USER:-$USER} | cut -d: -f6)
-    ## Check if a bashrc file is already there.
-    OLD_BASHRC="${USER_HOME}/.bashrc"
-    if [[ -e ${OLD_BASHRC} ]]; then
-        echo -e "${YELLOW}Moving old bash config file to ${USER_HOME}/.bashrc.bak${RC}"
-        if ! mv ${OLD_BASHRC} ${USER_HOME}/.bashrc.bak; then
-            echo -e "${RED}Can't move the old bash config file!${RC}"
+link_config() {
+    USER_HOME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)
+    OLD_BASHRC="$USER_HOME/.bashrc"
+    BASH_PROFILE="$USER_HOME/.bash_profile"
+    
+    if [ -e "$OLD_BASHRC" ]; then
+        print_colored "$YELLOW" "Moving old bash config file to $USER_HOME/.bashrc.bak"
+        if ! mv "$OLD_BASHRC" "$USER_HOME/.bashrc.bak"; then
+            print_colored "$RED" "Can't move the old bash config file!"
             exit 1
         fi
     fi
 
-    echo -e "${YELLOW}Linking new bash config file...${RC}"
-    ## Make symbolic link.
-    ln -svf ${GITPATH}/.bashrc ${USER_HOME}/.bashrc
+    print_colored "$YELLOW" "Linking new bash config file..."
+    if ! ln -svf "$GITPATH/.bashrc" "$USER_HOME/.bashrc" || ! ln -svf "$GITPATH/starship.toml" "$USER_HOME/.config/starship.toml"; then
+        print_colored "$RED" "Failed to create symbolic links"
+        exit 1
+    fi
 
-    #Create .config folder if it does not exist
-    mkdir -p ${USER_HOME}/.config
-
-    ln -svf ${GITPATH}/starship.toml ${USER_HOME}/.config/starship.toml
+    # Create .bash_profile if it doesn't exist
+    if [ ! -f "$BASH_PROFILE" ]; then
+        print_colored "$YELLOW" "Creating .bash_profile..."
+        echo "[ -f ~/.bashrc ] && . ~/.bashrc" > "$BASH_PROFILE"
+        print_colored "$GREEN" ".bash_profile created and configured to source .bashrc"
+    else
+        print_colored "$YELLOW" ".bash_profile already exists. Please ensure it sources .bashrc if needed."
+    fi
 }
 
-checkEnv
-
-if command -v docker &> /dev/null; then
-    echo "Docker installation found"
+# Main execution
+if command -v docker &> /dev/null && ! grep -qi "proxmox" /etc/os-release; then
+    echo "Docker installation found or this is a proxmox server"
 else
     installDocker
 fi
 
-installDepend
-installStarship
-installZoxide
+setup_directories
+check_environment
+install_dependencies
+install_starship_and_fzf
+install_zoxide
+create_fastfetch_config
 
-if linkConfig; then
-    echo -e "${GREEN}Done!\nrestart your shell to see the changes.${RC}"
+if link_config; then
+    print_colored "$GREEN" "Done!\nrestart your shell to see the changes."
 else
-    echo -e "${RED}Something went wrong!${RC}"
+    print_colored "$RED" "Something went wrong!"
 fi
