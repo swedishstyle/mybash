@@ -162,7 +162,6 @@ alias vi='nvim'
 alias svi='sudo vi'
 alias vis='nvim "+set si"'
 
-
 # Change directory aliases
 alias home='cd ~'
 alias cd..='cd ..'
@@ -254,8 +253,13 @@ alias docker-clean=' \
   docker network prune -f ; \
   docker volume prune -f '
 
-# Kubernetes alias'
-alias k='kubectl'
+if command -v kubectl &> /dev/null; then
+    alias k='kubectl'
+
+	#Enable kubectl auto-complete
+	kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
+	complete -o default -F __start_kubectl k 
+fi
 
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
