@@ -258,7 +258,7 @@ if command -v kubectl &> /dev/null; then
 
 	#Enable kubectl auto-complete
 	kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
-	complete -o default -F __start_kubectl k 
+	complete -o default -F __start_kubectl k
 fi
 
 # Show all logs in /var/log
