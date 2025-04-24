@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-[ -z "$PS1" ] && return
-
 # Define color codes using tput for better compatibility
 RC=$(tput sgr0)
 RED=$(tput setaf 1)
