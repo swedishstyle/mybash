@@ -261,6 +261,18 @@ if command -v kubectl &> /dev/null; then
 	#Enable kubectl auto-complete
 	kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
 	complete -o default -F __start_kubectl k
+
+	function kscale() {
+		if [ $# -ne 3 ]; then
+			echo "Usage: kscale <namespace> <deployment> <replica-count>"
+			return 1
+		fi
+		local namespace="$1"
+		local deployment="$2"
+		local replicas="$3"
+		kubectl scale deployment "$deployment" -n "$namespace" --replicas="$replicas"
+	}
+	export -f kscale
 fi
 
 # Show all logs in /var/log
