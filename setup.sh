@@ -23,7 +23,7 @@ command_exists() {
 
 installDocker() {
     #Docker install script
-    sh <(curl -sSL https://get.docker.com)
+    bash < (curl -sSL https://get.docker.com)
 
     #Docker compose + add user to group
     LATEST=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
@@ -69,7 +69,7 @@ setup_directories() {
     if [ -d "$LINUXTOOLBOXDIR/mybash" ]; then rm -rf "$LINUXTOOLBOXDIR/mybash"; fi
 
     print_colored "$YELLOW" "Cloning mybash repository into: $LINUXTOOLBOXDIR/mybash"
-    if git clone https://github.com/ChrisTitusTech/mybash "$LINUXTOOLBOXDIR/mybash"; then
+    if git clone https://github.com/swedishstyle/mybash "$LINUXTOOLBOXDIR/mybash"; then
         print_colored "$GREEN" "Successfully cloned mybash repository"
     else
         print_colored "$RED" "Failed to clone mybash repository"
