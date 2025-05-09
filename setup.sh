@@ -23,7 +23,7 @@ command_exists() {
 
 installDocker() {
     #Docker install script
-    bash < (curl -sSL https://get.docker.com)
+    bash <(curl -sSL https://get.docker.com)
 
     #Docker compose + add user to group
     LATEST=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
