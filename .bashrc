@@ -51,9 +51,13 @@ fi
 #######################################################
 # EXPORTS
 #######################################################
+SECRETS_FILE="$HOME/.config/secrets.sh"
+[ -f "$SECRETS_FILE" ] && source "$SECRETS_FILE"
 
 # Disable the bell
 if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
+
+export SQLSERVER='skoll.tadewhittaker.com'
 
 # Expand the history size
 export HISTFILESIZE=10000
