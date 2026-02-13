@@ -287,7 +287,7 @@ alias sha1='openssl sha1'
 
 alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
 
-upall() {
+function upall() {
     if [ "$EUID" -ne 0 ]; then
         SUDO="sudo"
     fi
