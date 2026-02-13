@@ -287,7 +287,16 @@ alias sha1='openssl sha1'
 
 alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
 
-alias upall="sudo apt-get update && sudo apt-get dist-upgrade -y"
+upall() {
+    if [ "$EUID" -ne 0 ]; then
+        SUDO="sudo"
+    fi
+
+    $SUDO apt-get clean &&
+    $SUDO apt-get update &&
+    $SUDO apt-get dist-upgrade -y &&
+    $SUDO apt-get autoremove -y
+}
 
 #######################################################
 # SPECIAL FUNCTIONS
