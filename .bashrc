@@ -249,8 +249,8 @@ alias unbz2='tar -xvjf'
 alias ungz='tar -xvzf'
 
 # Alias's for Docker commands
-alias dcup='docker compose up -d'
-alias dcre='docker compose down && docker compose up -d'
+alias dcup='docker compose up -d --pull always'
+alias dcre='docker compose down && docker compose up -d --pull always'
 alias dcdown='docker compose down'
 alias dps='docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}" | (read -r; printf "%s\n" "$REPLY"; sort -k 2)'
 alias docker-clean=' \
