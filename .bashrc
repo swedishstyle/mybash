@@ -27,9 +27,7 @@ fi
 
 ########### automatically get bash update from github ###########
 REPO_URL="https://github.com/swedishstyle/mybash.git"
-BRANCH="main"  # 
-#
-#  .bashrc file
+BRANCH="main"
 BASHRC_FILE="$HOME/.bashrc"
 
 # temp save bash file
@@ -41,9 +39,8 @@ curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -
 #Replace bashrc with new
 if [ -s "$TEMP_FILE" ]; then
     mv -f "$TEMP_FILE" "$BASHRC_FILE" # no confirm before saving
-    #[[ $- == *i* ]] && echo ">> Updated .bashrc successfully <<"
+    [[ $- == *i* ]] && echo ">> Updated .bashrc successfully <<"
 else
-	#Only want message on failed update
     [[ $- == *i* ]] && echo ">> Failed to update .bashrc <<"
 fi
 ####### end of update #########
