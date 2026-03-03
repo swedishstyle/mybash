@@ -167,12 +167,15 @@ install_dependencies() {
             ${SUDO_CMD} ${PACKAGER} install -n ${DEPENDENCIES}
             ;;
         *)
-            #Fix for Ubuntu 64 bit
-            if(source /etc/os-release && [[ "$ID" == "ubuntu" ]]); then
-                fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
-                if ! grep -q "^deb .*$fastfetch_ppa" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-                    sudo add-apt-repository ppa:zhangsongcui3371/fastfetch -y > /dev/null 2>&1
-                    sudo apt update
+            #Fix for Ubuntu - fastfetch not in default repos, need PPA
+            if [ -r /etc/os-release ]; then
+                . /etc/os-release
+                if [ "$ID" = "ubuntu" ]; then
+                    fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
+                    if ! grep -qs "zhangsongcui3371.*fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+                        ${SUDO_CMD} add-apt-repository ppa:zhangsongcui3371/fastfetch -y
+                        ${SUDO_CMD} apt update
+                    fi
                 fi
             fi
             ${SUDO_CMD} ${PACKAGER} install -yq ${DEPENDENCIES}
