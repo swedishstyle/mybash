@@ -26,20 +26,15 @@ elif [ -f /etc/bash_completion ]; then
 fi
 
 ########### automatically get bash update from github ###########
-REPO_URL="https://github.com/swedishstyle/mybash.git"
-BRANCH="main"
 BASHRC_FILE="$HOME/.bashrc"
-
-# temp save bash file
 TEMP_FILE=$(mktemp)
+trap 'rm -f "$TEMP_FILE"' EXIT
 
-#Grab updated bash 
-curl -sSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -o "$TEMP_FILE"
-
-#Replace bashrc with new
-if [ -s "$TEMP_FILE" ]; then
-    mv -f "$TEMP_FILE" "$BASHRC_FILE" # no confirm before saving
-    [[ $- == *i* ]] && echo ">> Updated .bashrc successfully <<"
+if curl -sfSL "https://raw.githubusercontent.com/swedishstyle/mybash/main/.bashrc" -o "$TEMP_FILE" && [ -s "$TEMP_FILE" ]; then
+    if ! cmp -s "$TEMP_FILE" "$BASHRC_FILE"; then
+        mv -f "$TEMP_FILE" "$BASHRC_FILE"
+        [[ $- == *i* ]] && echo ">> Updated .bashrc successfully <<"
+    fi
 else
     [[ $- == *i* ]] && echo ">> Failed to update .bashrc <<"
 fi
