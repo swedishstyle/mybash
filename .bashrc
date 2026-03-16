@@ -281,6 +281,15 @@ alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
 
 [ -f ~/.homelab_env ] && source ~/.homelab_env
 
+_pick_nomad_addr() {
+    for node in 192.168.1.71 192.168.1.72 192.168.1.73; do
+        if curl -sf "http://$node:4646/v1/status/leader" &>/dev/null; then
+            echo "http://$node:4646"; return
+        fi
+    done
+}
+export NOMAD_ADDR=$(_pick_nomad_addr)
+
 function upall() {
     if [ "$EUID" -ne 0 ]; then
         SUDO="sudo"
