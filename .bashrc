@@ -251,26 +251,6 @@ alias docker-clean=' \
   docker network prune -f ; \
   docker volume prune -f '
 
-if command -v kubectl &> /dev/null; then
-    alias k='kubectl'
-
-	#Enable kubectl auto-complete
-	kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
-	complete -o default -F __start_kubectl k
-
-	function kscale() {
-		if [ $# -ne 3 ]; then
-			echo "Usage: kscale <namespace> <deployment> <replica-count>"
-			return 1
-		fi
-		local namespace="$1"
-		local deployment="$2"
-		local replicas="$3"
-		kubectl scale deployment "$deployment" -n "$namespace" --replicas="$replicas"
-	}
-	export -f kscale
-fi
-
 # Show all logs in /var/log
 alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
 
@@ -280,15 +260,6 @@ alias sha1='openssl sha1'
 alias clickpaste='sleep 3; xdotool type "$(xclip -o -selection clipboard)"'
 
 [ -f ~/.homelab_env ] && source ~/.homelab_env
-
-_pick_nomad_addr() {
-    for node in 192.168.1.71 192.168.1.72 192.168.1.73; do
-        if curl -sf "http://$node:4646/v1/status/leader" &>/dev/null; then
-            echo "http://$node:4646"; return
-        fi
-    done
-}
-export NOMAD_ADDR=$(_pick_nomad_addr)
 
 function upall() {
     if [ "$EUID" -ne 0 ]; then
@@ -694,7 +665,7 @@ if [[ $- == *i* ]]; then
     bind '"\C-f":"zi\n"'
 fi
 
-export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin"
+export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin:$HOME/.opencode/bin"
 
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
