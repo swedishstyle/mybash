@@ -49,7 +49,8 @@ SECRETS_FILE="$HOME/.config/secrets.sh"
 # Disable the bell
 if [[ $iatest -gt 0 ]]; then bind "set bell-style visible"; fi
 
-export SQLSERVER='skoll.tadewhittaker.com'
+export SQLSERVER='sql.tadewhittaker.com'
+export ANDROID_HOME="$HOME/android-sdk"
 
 # Expand the history size
 export HISTFILESIZE=10000
@@ -665,7 +666,7 @@ if [[ $- == *i* ]]; then
     bind '"\C-f":"zi\n"'
 fi
 
-export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin:$HOME/.opencode/bin"
+export PATH=$PATH:"$HOME/.local/bin:$HOME/.cargo/bin:/var/lib/flatpak/exports/bin:/.local/share/flatpak/exports/bin:$HOME/.opencode/bin:/usr/local/go/bin"
 
 eval "$(starship init bash)"
 eval "$(zoxide init bash)"
