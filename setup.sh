@@ -1,12 +1,14 @@
 #!/bin/sh -e
 
 # Define color codes using tput for better compatibility
-RC=$(tput sgr0)
-RED=$(tput setaf 1)
-YELLOW=$(tput setaf 3)
-GREEN=$(tput setaf 2)
+RC=$(tput sgr0 2>/dev/null || true)
+RED=$(tput setaf 1 2>/dev/null || true)
+YELLOW=$(tput setaf 3 2>/dev/null || true)
+GREEN=$(tput setaf 2 2>/dev/null || true)
 
-LINUXTOOLBOXDIR="$HOME/linuxtoolbox"
+# Where the repo lives when we have to fetch it ourselves (override with MYBASH_DIR=...)
+MYBASH_DIR="${MYBASH_DIR:-$HOME/mybash}"
+MYBASH_REPO="${MYBASH_REPO:-https://github.com/swedishstyle/mybash}"
 PACKAGER=""
 SUDO_CMD=""
 SUGROUP=""
@@ -59,27 +61,7 @@ installDocker() {
 }
 
 # Setup functions
-setup_directories() {
-    if [ ! -d "$LINUXTOOLBOXDIR" ]; then
-        print_colored "$YELLOW" "Creating linuxtoolbox directory: $LINUXTOOLBOXDIR"
-        mkdir -p "$LINUXTOOLBOXDIR"
-        print_colored "$GREEN" "linuxtoolbox directory created: $LINUXTOOLBOXDIR"
-    fi
-
-    if [ -d "$LINUXTOOLBOXDIR/mybash" ]; then rm -rf "$LINUXTOOLBOXDIR/mybash"; fi
-
-    print_colored "$YELLOW" "Cloning mybash repository into: $LINUXTOOLBOXDIR/mybash"
-    if git clone https://github.com/swedishstyle/mybash "$LINUXTOOLBOXDIR/mybash"; then
-        print_colored "$GREEN" "Successfully cloned mybash repository"
-    else
-        print_colored "$RED" "Failed to clone mybash repository"
-        exit 1
-    fi
-
-    cd "$LINUXTOOLBOXDIR/mybash" || exit
-}
-
-check_environment() {
+detect_environment() {
     # Check for required commands
     REQUIREMENTS='curl groups sudo'
     for req in $REQUIREMENTS; do
@@ -113,9 +95,65 @@ check_environment() {
         SUDO_CMD="su -c"
     fi
     printf "Using %s as privilege escalation software\n" "$SUDO_CMD"
+}
 
+install_git() {
+    print_colored "$YELLOW" "Installing git..."
+    case "$PACKAGER" in
+        apt|nala) ${SUDO_CMD} ${PACKAGER} update && ${SUDO_CMD} ${PACKAGER} install -y git ;;
+        pacman) ${SUDO_CMD} pacman -Sy --noconfirm git ;;
+        xbps-install) ${SUDO_CMD} xbps-install -Sy git ;;
+        emerge) ${SUDO_CMD} emerge -v dev-vcs/git ;;
+        nix-env) ${SUDO_CMD} nix-env -iA nixos.git ;;
+        zypper) ${SUDO_CMD} zypper install -n git ;;
+        *) ${SUDO_CMD} ${PACKAGER} install -y git ;;
+    esac
+}
+
+# The configs are symlinked out of the directory this script lives in, so the
+# script has to run from a checkout. If it was piped in (curl | bash) there is
+# no checkout yet: fetch one and hand over to its copy of this script.
+bootstrap() {
+    # When the script is piped in, $0 is the shell ("bash"), not a path -- and
+    # dirname of that is ".", which would wrongly make the current directory the
+    # checkout. Only trust $0 when it names a file that actually exists.
+    SCRIPT_DIR=""
+    if [ -f "$0" ]; then
+        SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd) || SCRIPT_DIR=""
+    fi
+
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/.bashrc" ] && [ -f "$SCRIPT_DIR/starship.toml" ]; then
+        GITPATH="$SCRIPT_DIR"
+        return 0
+    fi
+
+    if [ -n "$MYBASH_BOOTSTRAPPED" ]; then
+        print_colored "$RED" "$MYBASH_DIR doesn't look like a mybash checkout"
+        exit 1
+    fi
+
+    command_exists git || install_git
+
+    if [ -d "$MYBASH_DIR/.git" ]; then
+        print_colored "$YELLOW" "Updating existing checkout: $MYBASH_DIR"
+        git -C "$MYBASH_DIR" pull --ff-only || print_colored "$YELLOW" "Couldn't fast-forward, using the checkout as-is"
+    else
+        print_colored "$YELLOW" "Cloning mybash into: $MYBASH_DIR"
+        if ! git clone "$MYBASH_REPO" "$MYBASH_DIR"; then
+            print_colored "$RED" "Failed to clone mybash repository"
+            exit 1
+        fi
+    fi
+
+    chmod +x "$MYBASH_DIR/setup.sh"
+    print_colored "$GREEN" "Running $MYBASH_DIR/setup.sh"
+    MYBASH_BOOTSTRAPPED=1
+    export MYBASH_BOOTSTRAPPED
+    exec "$MYBASH_DIR/setup.sh"
+}
+
+check_environment() {
     # Check write permissions
-    GITPATH=$(dirname "$(realpath "$0")")
     if [ ! -w "$GITPATH" ]; then
         print_colored "$RED" "Can't write to $GITPATH"
         exit 1
@@ -167,14 +205,14 @@ install_dependencies() {
             ${SUDO_CMD} ${PACKAGER} install -n ${DEPENDENCIES}
             ;;
         *)
-            #Fix for Ubuntu - fastfetch not in default repos, need PPA
+            #Fix for Ubuntu - fastfetch not in default repos before 24.10, need PPA
             if [ -r /etc/os-release ]; then
                 . /etc/os-release
                 if [ "$ID" = "ubuntu" ]; then
-                    fastfetch_ppa="ppa:zhangsongcui3371/fastfetch"
-                    if ! grep -qs "zhangsongcui3371.*fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
-                        ${SUDO_CMD} add-apt-repository ppa:zhangsongcui3371/fastfetch -y
-                        ${SUDO_CMD} apt update
+                    # If the PPA can't be added, fall back to the upstream .deb and
+                    # drop fastfetch from the apt package list so the rest still installs.
+                    if ! setup_fastfetch_source; then
+                        DEPENDENCIES=$(echo "${DEPENDENCIES}" | sed 's/ fastfetch//')
                     fi
                 fi
             fi
@@ -183,6 +221,72 @@ install_dependencies() {
     esac
 
     install_font
+}
+
+# Install fastfetch straight from the upstream GitHub release.
+# Used when Launchpad is unavailable (it regularly 500s with GPGKeyTemporarilyNotFoundError).
+install_fastfetch_deb() {
+    case "$(dpkg --print-architecture)" in
+        amd64) ff_arch="amd64" ;;
+        arm64) ff_arch="aarch64" ;;
+        armhf) ff_arch="armv7l" ;;
+        *)
+            print_colored "$RED" "No fastfetch .deb for $(dpkg --print-architecture), skipping fastfetch"
+            return 0
+            ;;
+    esac
+
+    ff_url=$(curl -sL https://api.github.com/repos/fastfetch-cli/fastfetch/releases/latest \
+        | grep -o "https://[^\"]*fastfetch-linux-${ff_arch}\.deb" | head -n1)
+    if [ -z "$ff_url" ]; then
+        print_colored "$RED" "Couldn't find a fastfetch release asset, skipping fastfetch"
+        return 0
+    fi
+
+    ff_deb=$(mktemp -d)/fastfetch.deb
+    if curl -sSL -o "$ff_deb" "$ff_url" && ${SUDO_CMD} apt install -y "$ff_deb"; then
+        print_colored "$GREEN" "Installed fastfetch from $ff_url"
+    else
+        print_colored "$RED" "fastfetch install failed, continuing without it"
+    fi
+    rm -rf "$(dirname "$ff_deb")"
+}
+
+# Make sure apt has a fastfetch candidate. Returns 0 if apt can install it,
+# 1 if it was installed some other way (caller should drop it from the apt list).
+setup_fastfetch_source() {
+    if apt-cache policy fastfetch 2>/dev/null | grep -q 'Candidate: [0-9]'; then
+        return 0
+    fi
+
+    if ! grep -qs "zhangsongcui3371.*fastfetch" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+        ppa_attempt=1
+        while [ "$ppa_attempt" -le 3 ]; do
+            if ${SUDO_CMD} add-apt-repository -y ppa:zhangsongcui3371/fastfetch; then
+                break
+            fi
+            print_colored "$YELLOW" "add-apt-repository failed (attempt ${ppa_attempt}/3)"
+            # A failed add can leave a keyless source behind that breaks apt update
+            ${SUDO_CMD} rm -f /etc/apt/sources.list.d/zhangsongcui3371-ubuntu-fastfetch-*.sources
+            ppa_attempt=$((ppa_attempt + 1))
+            if [ "$ppa_attempt" -le 3 ]; then
+                print_colored "$YELLOW" "Retrying in 10s..."
+                sleep 10
+            fi
+        done
+    fi
+
+    ${SUDO_CMD} apt update || true
+
+    if apt-cache policy fastfetch 2>/dev/null | grep -q 'Candidate: [0-9]'; then
+        return 0
+    fi
+
+    print_colored "$YELLOW" "fastfetch PPA unavailable, falling back to the upstream .deb"
+    ${SUDO_CMD} rm -f /etc/apt/sources.list.d/zhangsongcui3371-ubuntu-fastfetch-*.sources
+    ${SUDO_CMD} apt update || true
+    install_fastfetch_deb
+    return 1
 }
 
 install_pacman_dependencies() {
@@ -268,8 +372,15 @@ create_fastfetch_config() {
     CONFIG_FILE="$CONFIG_DIR/config.jsonc"
     
     mkdir -p "$CONFIG_DIR"
-    [ -e "$CONFIG_FILE" ] && rm -f "$CONFIG_FILE"
-    
+    # -e is false for a dangling symlink, so test -L as well
+    if [ -e "$CONFIG_FILE" ] || [ -L "$CONFIG_FILE" ]; then rm -f "$CONFIG_FILE"; fi
+
+    # This repo doesn't ship a config.jsonc; don't leave a symlink to nothing behind
+    if [ ! -f "$GITPATH/config.jsonc" ]; then
+        printf "No config.jsonc in %s, leaving fastfetch on its defaults\n" "$GITPATH"
+        return 0
+    fi
+
     if ! ln -svf "$GITPATH/config.jsonc" "$CONFIG_FILE"; then
         print_colored "$RED" "Failed to create symbolic link for fastfetch config"
         exit 1
@@ -306,13 +417,14 @@ link_config() {
 }
 
 # Main execution
-if command -v docker &> /dev/null && ! grep -qi "proxmox" /etc/os-release; then
+if command_exists docker || grep -qi "proxmox" /etc/os-release 2>/dev/null; then
     echo "Docker installation found or this is a proxmox server"
 else
     installDocker
 fi
 
-setup_directories
+detect_environment
+bootstrap
 check_environment
 install_dependencies
 install_starship_and_fzf

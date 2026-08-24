@@ -6,7 +6,6 @@ RED=$(tput setaf 1)
 YELLOW=$(tput setaf 3)
 GREEN=$(tput setaf 2)
 
-LINUXTOOLBOXDIR="$HOME/linuxtoolbox"
 PACKAGER=""
 SUDO_CMD=""
 
@@ -135,13 +134,6 @@ remove_configs() {
     print_colored "$GREEN" "Configuration files removed"
 }
 
-remove_linuxtoolbox() {
-    if [ -d "$LINUXTOOLBOXDIR" ]; then
-        print_colored "$YELLOW" "Removing linuxtoolbox directory..."
-        rm -rf "$LINUXTOOLBOXDIR"
-        print_colored "$GREEN" "linuxtoolbox directory removed"
-    fi
-}
 
 # Main execution
 determine_package_manager
@@ -151,6 +143,7 @@ uninstall_font
 uninstall_starship_and_fzf
 uninstall_zoxide
 remove_configs
-remove_linuxtoolbox
 
+# The checkout is left alone -- this script lives in it. Remove it yourself if you
+# want it gone, e.g. rm -rf ~/mybash
 print_colored "$GREEN" "Uninstallation complete. Please restart your shell for changes to take effect."

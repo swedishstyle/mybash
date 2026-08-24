@@ -3,7 +3,22 @@
 The `.bashrc` file is a script that runs every time a new terminal session is started in Unix-like operating systems. It is used to configure the shell session, set up aliases, define functions, and more, making the terminal easier to use and more powerful. Below is a summary of the key sections and functionalities defined in the provided `.bashrc` file.
 
 ### Installation
-git clone https://github.com/swedishstyle/mybash.git && cd mybash && ./setup.sh
+
+One line on a fresh machine — installs git if needed, clones to `~/mybash`, then runs the setup:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/swedishstyle/mybash/main/setup.sh | bash
+```
+
+Re-running it updates the checkout and re-applies everything. To put the checkout
+somewhere else, set `MYBASH_DIR`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/swedishstyle/mybash/main/setup.sh | MYBASH_DIR=~/dotfiles/mybash bash
+```
+
+If you already have a clone, just run `./setup.sh` from inside it — the configs are
+symlinked out of whichever checkout the script runs from.
 
 ### Initial Setup and System Checks
 
