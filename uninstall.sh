@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
 # Define color codes using tput for better compatibility
-RC=$(tput sgr0)
-RED=$(tput setaf 1)
-YELLOW=$(tput setaf 3)
-GREEN=$(tput setaf 2)
+RC=$(tput sgr0 2>/dev/null || true)
+RED=$(tput setaf 1 2>/dev/null || true)
+YELLOW=$(tput setaf 3 2>/dev/null || true)
+GREEN=$(tput setaf 2 2>/dev/null || true)
 
 PACKAGER=""
 SUDO_CMD=""

@@ -39,13 +39,14 @@ installDocker() {
             ;;
         i686 | i386)
             echo "32-bit architecture detected, wtf"
+            return 1
             ;;
         arm* | aarch64)
             curl -sSL https://github.com/docker/compose/releases/download/$LATEST/docker-compose-linux-aarch64 -o ~/.docker/cli-plugins/docker-compose
             ;;
         *)
             echo "Unknown architecture: $ARCH"
-            # Add a fallback command or an error message here
+            return 1
             ;;
     esac
 
