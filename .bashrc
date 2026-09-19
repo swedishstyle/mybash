@@ -461,12 +461,10 @@ distribution () {
 }
 
 DISTRIBUTION=$(distribution)
-if command -v bat &> /dev/null || command -v batcat &> /dev/null; then
-    if [ "$DISTRIBUTION" = "redhat" ] || [ "$DISTRIBUTION" = "arch" ]; then
-        alias cat='bat'
-    else
-        alias cat='batcat'
-    fi
+if command -v bat &> /dev/null; then
+    alias cat='bat'
+elif command -v batcat &> /dev/null; then
+    alias cat='batcat'
 fi
 
 # Show the current version of the operating system
